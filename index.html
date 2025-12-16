@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Miguel Ferrera Dino</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 72px;
+      font-weight: bold;
+      color: rgba(255,255,255,0.05);
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="watermark">Miguel Ferrera Dino</div>
+  <canvas id="game"></canvas>
+
+  <script>
+    // ================= CANVAS =================
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ================= IMÁGENES =================
+    const dinoImg = new Image();
+    dinoImg.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_dBAqNCqUNZQX3Mu5dmx3XpLvPAXe1oVo9w&s";
+
+    const fireImg = new Image();
+    fireImg.src = "https://i.imgur.com/9XqYz0S.png"; // fuego
+
+    // ================= JUGADOR =================
+    const groundOffset = 120;
+
+    const dino = {
+      x: 100,
+      y: 0,
+      w: 70,
+      h: 70,
+      vy: 0,
+      jumping: false
+    };
+
+    // ================= OBSTÁCULO =================
+    const obstacle = {
+      x: canvas.width,
+      y: 0,
+      w: 60,
+      h: 60
+    };
+
+    let gravity = 1.1;
+    let jumpForce = -20;
+    let speed = 9;
+    let score = 0;
+    let gameOver = false;
+
+    // ================= CONTROLES =================
+    function jump() {
+      if (!dino.jumping && !gameOver) {
+        dino.vy = jumpForce;
+        dino.jumping = true;
+      }
+    }
+
+    document.addEventListener('keydown', jump);
+    document.addEventListener('click', jump);
+    document.addEventListener('touchstart', jump);
+
+    // ================= UPDATE =================
+    function update() {
+      if (gameOver) return;
+
+      const groundY = canvas.height - groundOffset;
+
+      // Dino
+      dino.vy += gravity;
+      dino.y += dino.vy;
+
+      if (dino.y + dino.h >= groundY) {
+        dino.y = groundY - dino.h;
+        dino.vy = 0;
+        dino.jumping = false;
+      }
+
+      // Fuego
+      obstacle.x -= speed;
+      if (obstacle.x + obstacle.w < 0) {
+        obstacle.x = canvas.width + Math.random() * 400;
+        score++;
+      }
+
+      obstacle.y = groundY - obstacle.h;
+
+      // Colisión
+      if (
+        dino.x < obstacle.x + obstacle.w &&
+        dino.x + dino.w > obstacle.x &&
+        dino.y < obstacle.y + obstacle.h &&
+        dino.y + dino.h > obstacle.y
+      ) {
+        gameOver = true;
+      }
+    }
+
+    // ================= DRAW =================
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const groundY = canvas.height - groundOffset;
+
+      // Suelo
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(canvas.width, groundY);
+      ctx.stroke();
+
+      // Dino
+      ctx.drawImage(dinoImg, dino.x, dino.y, dino.w, dino.h);
+
+      // Fuego
+      ctx.drawImage(fireImg, obstacle.x, obstacle.y, obstacle.w, obstacle.h);
+
+      // Score
+      ctx.fillStyle = "#fff";
+      ctx.font = "22px Arial";
+      ctx.fillText("Puntos: " + score, 30, 50);
+
+      if (gameOver) {
+        ctx.font = "56px Arial";
+        ctx.fillText("GAME OVER", canvas.width / 2 - 170, canvas.height / 2);
+        ctx.font = "22px Arial";
+        ctx.fillText("Pulsa para reiniciar", canvas.width / 2 - 95, canvas.height / 2 + 50);
+      }
+    }
+
+    // ================= LOOP =================
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    document.addEventListener("click", () => {
+      if (gameOver) location.reload();
+    });
+
+    loop();
+  </script>
+
+</body>
+</html>
